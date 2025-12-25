@@ -91,8 +91,20 @@ st.success(f"⏳ {days_left} days to New Year!")
 
 # 📁 Data file
 DATA_FILE = "community_posts.csv"
+
+# Safe CSV initialization
 if not os.path.exists(DATA_FILE):
-    pd.DataFrame(columns=["Name", "Gratitude", "Goals", "Word", "Time"]).to_csv(DATA_FILE, index=False)
+    pd.DataFrame(columns=["Name", "Gratitude", "Goals", "Word", "Time"]).to_csv(
+        DATA_FILE, index=False, encoding='utf-8-sig'
+    )
+
+# Try reading CSV safely; recreate if corrupted
+try:
+    df_posts = pd.read_csv(DATA_FILE, encoding='utf-8-sig')
+except Exception as e:
+    st.warning("Detected corrupted CSV. Recreating a clean community wall file.")
+    df_posts = pd.DataFrame(columns=["Name", "Gratitude", "Goals", "Word", "Time"])
+    df_posts.to_csv(DATA_FILE, index=False, encoding='utf-8-sig')
 
 # ✍️ Post form
 with st.form("post_form"):
@@ -103,17 +115,17 @@ with st.form("post_form"):
     word = st.text_input("🧠 Your word for the year (optional)")
     submit = st.form_submit_button("Post to Community 🚀")
 
+# Save new post
 if submit and name and goals:
-    df = pd.read_csv(DATA_FILE)
-    df.loc[len(df)] = [name, gratitude, goals, word, datetime.now().strftime("%Y-%m-%d %H:%M")]
-    df.to_csv(DATA_FILE, index=False)
+    df_posts.loc[len(df_posts)] = [name, gratitude, goals, word, datetime.now().strftime("%Y-%m-%d %H:%M")]
+    df_posts.to_csv(DATA_FILE, index=False, encoding='utf-8-sig')
     st.success("🎉 Your post is live on the community wall!")
 
-# 📜 Display posts in stylish cards
+# Display posts in stylish cards
 st.markdown("---")
 st.subheader("🌟 Community Posts")
-df = pd.read_csv(DATA_FILE).iloc[::-1]
-for _, row in df.iterrows():
+df_display = df_posts.iloc[::-1]  # reverse for latest first
+for _, row in df_display.iterrows():
     st.markdown(f"""
     <div style="
         background: rgba(255, 255, 255, 0.85);
